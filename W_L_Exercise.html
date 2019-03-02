@@ -1,0 +1,68 @@
+Practical Machine Learning,the Weight Lifting Exercise Dataset
+ken
+3/2/2019
+Data are kindly provided at: http://groupware.les.inf.puc-rio.br/har.
+Look into training data
+Many varibles have NA/missing values. These varibles are deleted because imputation has not been easy for me.
+train <- readRDS("trainData.RDs")
+train$cvtd_timestamp <- lubridate::dmy_hm(train$cvtd_timestamp)
+no_na <- apply(train, 2, function(x) mean(is.na(x))) %>% 
+    .[. == 0] %>% 
+    names()
+Check if in the test data, the above varibles do not have NA
+test <- readRDS("testData.RDs")
+test$cvtd_timestamp <- lubridate::dmy_hm(test$cvtd_timestamp)
+apply(test[no_na[no_na !="classe"]], 2, function(x) mean(is.na(x))) %>% 
+    .[. == 0] %>% 
+    names() %>%
+    identical(., no_na[no_na !="classe"])
+## [1] TRUE
+Modify datasets
+Change the train- and test-datasets to have only the selected variables.
+Prediction Model chosen here
+Random forest is chosen because the data have both types of numerics and characters. Also the user_name were omitted. The ‘mtry’ of randomforest is fixed to 4 to limit the power of prediction. ##Cross Validation To learn the effect of Cross Validation/Out of Sample Error, the train data was split into 2 and 5 partitions. Results of “classe” prediction and its probability estimates are described. ###Model Fitting ####1. Train datasets in 2-fold Cross Validation
+2. Train datasets in 5-fold Cross Validation
+Apply the two models to test dataset
+1. Classification of ‘classe’
+Predictions by both models agreed well. I did not see the value of Cross Validation here.
+table(
+   predict(rf2.model, test, type = "raw"),
+   predict(rf5.model, test, type = "raw")
+)
+##    
+##     A B C D E
+##   A 7 0 0 0 0
+##   B 0 8 0 0 0
+##   C 0 0 1 0 0
+##   D 0 0 0 1 0
+##   E 0 0 0 0 3
+2. Probablility of the Classification
+However, probability values were not identical between 2 models.
+identical(predict(rf2.model, test, type = "prob"),
+predict(rf5.model, test, type = "prob"))
+## [1] FALSE
+3. Differences in Probability
+The difference in “prob” values.
+predict(rf2.model, test, type = "prob") - 
+    predict(rf5.model, test, type = "prob")
+##         A      B      C      D      E
+## 1  -0.006  0.008  0.006 -0.008  0.000
+## 2   0.004  0.016 -0.018 -0.002  0.000
+## 3  -0.028  0.012  0.014 -0.004  0.006
+## 4  -0.002 -0.010  0.012  0.000  0.000
+## 5   0.010 -0.006 -0.004  0.002 -0.002
+## 6  -0.002  0.002 -0.018 -0.014  0.032
+## 7   0.006  0.000  0.002 -0.020  0.012
+## 8  -0.020  0.010  0.016 -0.008  0.002
+## 9   0.002 -0.002  0.000  0.000  0.000
+## 10 -0.002  0.004  0.000 -0.002  0.000
+## 11 -0.004  0.016  0.016 -0.024 -0.004
+## 12  0.002 -0.018  0.016  0.010 -0.010
+## 13  0.000 -0.010  0.004  0.004  0.002
+## 14  0.000  0.000  0.000  0.000  0.000
+## 15 -0.004  0.004  0.004  0.008 -0.012
+## 16  0.010  0.002 -0.002 -0.008 -0.002
+## 17  0.014  0.002  0.000  0.000 -0.016
+## 18 -0.006  0.018  0.000 -0.022  0.010
+## 19 -0.012  0.010  0.002 -0.002  0.002
+## 20  0.000  0.006 -0.002  0.000 -0.004
